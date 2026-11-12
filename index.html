@@ -7,7 +7,7 @@
   
   <!-- Tailwind CSS CDN -->
   <!-- SheetJS (xlsx) for Genuine Excel Export (.xlsx) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Prompt -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -386,7 +386,7 @@
           <span class="text-xs text-slate-500" id="plan-count-label">แสดง 0 รายการ</span>
           <button type="button" onclick="exportPlansToExcel()" title="ดาวน์โหลดตารางแผนพัฒนาหลักสูตรเป็น Excel" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap"><span>📥</span> <span>Excel</span></button>
           <button type="button" id="btn-add-plan" onclick="checkAuthAndRun(() => openModalPlan('create'))" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap">
-            <span>+</span> เพิ่มแผนพัฒนา (<span class="current-year-label">2569</span>)
+            <span>+</span> เพิ่มแผนพัฒนาหลักสูตร
           </button>
         </div>
       </div>
@@ -451,7 +451,7 @@
           <span class="text-xs text-slate-500" id="cisa-count-label">แสดง 0 รายการ</span>
           <button type="button" onclick="exportCisaToExcel()" title="ดาวน์โหลดตาราง CISA เป็น Excel" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap"><span>📥</span> <span>Excel</span></button>
           <button type="button" id="btn-add-cisa" onclick="checkAuthAndRun(() => openModalCisa('create'))" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap">
-            <span>+</span> เพิ่มข้อมูล CISA (<span class="current-year-label">2569</span>)
+            <span>+</span> เพิ่มข้อมูล CISA
           </button>
         </div>
       </div>
@@ -1035,8 +1035,8 @@
         const [pData, vData, planData, cisaData] = await Promise.all([
           db.select('programs', `academic_year=eq.${year}&order=id.asc`),
           db.select('vocational_programs', `academic_year=eq.${year}&order=id.asc`),
-          db.select('curriculum_plans', `academic_year=eq.${year}&order=id.asc`),
-          db.select('cisa_records', `academic_year=eq.${year}&order=id.asc`)
+          db.select('curriculum_plans', `order=id.asc`),
+          db.select('cisa_records', `order=id.asc`)
         ]);
 
         dataP2026 = pData || [];
@@ -1725,7 +1725,7 @@
       const title = document.getElementById("plan-form-title");
 
       if (mode === "edit") {
-        title.textContent = `แก้ไขแผนการพัฒนาหลักสูตร (${currentYear})`;
+        title.textContent = "แก้ไขแผนการพัฒนาหลักสูตร";
         const it = dataPlan.find(x => x.id === id);
         if (it) {
           document.getElementById("plan-fac").value = it.faculty_name;
@@ -1742,7 +1742,7 @@
           document.getElementById("plan-note").value = it.note || "";
         }
       } else {
-        title.textContent = `เพิ่มแผนการพัฒนาหลักสูตร (${currentYear})`;
+        title.textContent = "เพิ่มแผนการพัฒนาหลักสูตร";
         document.getElementById("form-plan").reset();
         document.getElementById("plan-year").value = `ปรับปรุง พ.ศ. ${currentYear}`;
       }
@@ -1879,7 +1879,7 @@
       const title = document.getElementById("cisa-form-title");
 
       if (mode === "edit") {
-        title.textContent = `แก้ไขข้อมูล CISA (${currentYear})`;
+        title.textContent = "แก้ไขข้อมูล CISA";
         const it = dataCisa.find(x => x.id === id);
         if (it) {
           document.getElementById("cisa-fac").value = it.faculty_name;
@@ -1890,7 +1890,7 @@
           document.getElementById("cisa-status").value = it.cisa_status || "ส่งเข้า CISA แล้ว";
         }
       } else {
-        title.textContent = `เพิ่มข้อมูล CISA (${currentYear})`;
+        title.textContent = "เพิ่มข้อมูล CISA";
         document.getElementById("form-cisa").reset();
         document.getElementById("cisa-year").value = `หลักสูตรปรับปรุง พ.ศ. ${currentYear}`;
         document.getElementById("cisa-status").value = "ส่งเข้า CISA แล้ว";
@@ -1981,6 +1981,234 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+    // ==========================================
+    // EXPORT TO EXCEL / CSV (100% RELIABLE)
+    // ==========================================
+    function triggerBlobDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function exportRowsToCSV(rows, filename) {
+      if (!rows || rows.length === 0) {
+        showToast("ไม่มีข้อมูลสำหรับดาวน์โหลด", "⚠️");
+        return;
+      }
+      const headers = Object.keys(rows[0]);
+      const csvLines = [headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(",")];
+      rows.forEach(r => {
+        csvLines.push(headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(","));
+      });
+      const bom = "\uFEFF";
+      const blob = new Blob([bom + csvLines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+      const csvName = filename.replace(/\.xlsx$/i, ".csv");
+      triggerBlobDownload(blob, csvName);
+      showToast(`ดาวน์โหลดไฟล์ ${csvName} สำเร็จแล้ว`, "📥");
+    }
+
+    function downloadWorkbook(wb, filename, fallbackRows = null) {
+      try {
+        if (typeof XLSX !== "undefined" && XLSX.writeFile) {
+          XLSX.writeFile(wb, filename);
+          showToast(`ดาวน์โหลดไฟล์ ${filename} เรียบร้อยแล้ว`, "📥");
+          return;
+        }
+      } catch (err) {
+        console.warn("SheetJS writeFile failed, fallback to CSV:", err);
+      }
+      if (fallbackRows && fallbackRows.length > 0) {
+        exportRowsToCSV(fallbackRows, filename);
+      } else {
+        showToast("กำลังประมวลผลไฟล์ กรุณาลองใหม่อีกครั้ง", "⚠️");
+      }
+    }
+
+    function exportAllToExcel() {
+      const rowsP = (dataP2026 || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "รหัสหลักสูตร": item.program_code || "",
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ระดับการศึกษา": item.degree_level || "",
+        "ชื่อหลักสูตร": item.program_name || "",
+        "สาขาวิชา": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "มาตรฐาน IQA": item.iqa_standard || "",
+        "เกณฑ์มาตรฐานหลักสูตร": item.curriculum_standard || "",
+        "กลุ่ม ISCED": item.isced_group || ""
+      }));
+
+      const rowsV = (dataPV2026 || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "รหัสหลักสูตร": item.program_code || "",
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ประเภทวิชา": item.category_name || "",
+        "สาขาวิชา": item.career_group || "",
+        "สาขางาน": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "ระดับ": "ปวช."
+      }));
+
+      const rowsPl = (dataPlan || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ระดับการศึกษา": item.degree_level || "",
+        "ชื่อหลักสูตร": item.program_name || "",
+        "สาขาวิชา": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "วิพากษ์": item.step1_critic || "",
+        "ขับเคลื่อน": item.step2_drive || "",
+        "สภาวิชาการ": item.step3_acad_council || "",
+        "สภา ม.": item.step4_univ_council || ""
+      }));
+
+      const rowsC = (dataCisa || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ระดับการศึกษา": item.degree_level || "",
+        "ชื่อหลักสูตร": item.program_name || "",
+        "สาขาวิชา": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "สถานะ CISA": item.cisa_status || ""
+      }));
+
+      const filename = `ข้อมูลหลักสูตร_มทร_พระนคร_ปี_${currentYear}.xlsx`;
+
+      if (typeof XLSX !== "undefined" && XLSX.utils) {
+        try {
+          const wb = XLSX.utils.book_new();
+          const wsP = XLSX.utils.json_to_sheet(rowsP.length ? rowsP : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          const wsV = XLSX.utils.json_to_sheet(rowsV.length ? rowsV : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          const wsPl = XLSX.utils.json_to_sheet(rowsPl.length ? rowsPl : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          const wsC = XLSX.utils.json_to_sheet(rowsC.length ? rowsC : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+
+          XLSX.utils.book_append_sheet(wb, wsP, "หลักสูตรอุดมศึกษา");
+          XLSX.utils.book_append_sheet(wb, wsV, "หลักสูตร ปวช.");
+          XLSX.utils.book_append_sheet(wb, wsPl, "แผนพัฒนาหลักสูตร");
+          XLSX.utils.book_append_sheet(wb, wsC, "ข้อมูล CISA");
+
+          [wsP, wsV, wsPl, wsC].forEach(ws => {
+            ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 16 }, { wch: 32 }, { wch: 30 }, { wch: 10 }, { wch: 18 }, { wch: 20 }, { wch: 20 }];
+          });
+
+          downloadWorkbook(wb, filename, rowsP);
+          return;
+        } catch (e) {
+          console.warn("XLSX multi-sheet build failed:", e);
+        }
+      }
+
+      // Fallback: Export current tab or Higher Ed as CSV with BOM
+      exportRowsToCSV(rowsP.length ? rowsP : (rowsPl.length ? rowsPl : rowsC), filename);
+    }
+
+    function exportHigherEdToExcel() {
+      const rowsP = (dataP2026 || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "รหัสหลักสูตร": item.program_code || "",
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ระดับการศึกษา": item.degree_level || "",
+        "ชื่อหลักสูตร": item.program_name || "",
+        "สาขาวิชา": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "มาตรฐาน IQA": item.iqa_standard || "",
+        "เกณฑ์มาตรฐานหลักสูตร": item.curriculum_standard || "",
+        "กลุ่ม ISCED": item.isced_group || ""
+      }));
+      const filename = `หลักสูตรอุดมศึกษา_มทร_พระนคร_ปี_${currentYear}.xlsx`;
+      if (typeof XLSX !== "undefined" && XLSX.utils) {
+        try {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(rowsP.length ? rowsP : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 16 }, { wch: 32 }, { wch: 30 }, { wch: 10 }, { wch: 18 }, { wch: 20 }, { wch: 20 }];
+          XLSX.utils.book_append_sheet(wb, ws, "หลักสูตรอุดมศึกษา");
+          downloadWorkbook(wb, filename, rowsP);
+          return;
+        } catch (e) { console.warn(e); }
+      }
+      exportRowsToCSV(rowsP, filename);
+    }
+
+    function exportVocationalToExcel() {
+      const rowsV = (dataPV2026 || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "รหัสหลักสูตร": item.program_code || "",
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ประเภทวิชา": item.category_name || "",
+        "สาขาวิชา": item.career_group || "",
+        "สาขางาน": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "ระดับ": "ปวช."
+      }));
+      const filename = `หลักสูตร_ปวช_มทร_พระนคร_ปี_${currentYear}.xlsx`;
+      if (typeof XLSX !== "undefined" && XLSX.utils) {
+        try {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(rowsV.length ? rowsV : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 22 }, { wch: 24 }, { wch: 28 }, { wch: 10 }, { wch: 10 }];
+          XLSX.utils.book_append_sheet(wb, ws, "หลักสูตร ปวช.");
+          downloadWorkbook(wb, filename, rowsV);
+          return;
+        } catch (e) { console.warn(e); }
+      }
+      exportRowsToCSV(rowsV, filename);
+    }
+
+    function exportPlansToExcel() {
+      const rowsPl = (dataPlan || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ระดับการศึกษา": item.degree_level || "",
+        "ชื่อหลักสูตร": item.program_name || "",
+        "สาขาวิชา": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "วิพากษ์": item.step1_critic || "",
+        "ขับเคลื่อน": item.step2_drive || "",
+        "สภาวิชาการ": item.step3_acad_council || "",
+        "สภา ม.": item.step4_univ_council || ""
+      }));
+      const filename = `แผนการพัฒนาหลักสูตร_มทร_พระนคร_ต่อเนื่อง.xlsx`;
+      if (typeof XLSX !== "undefined" && XLSX.utils) {
+        try {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(rowsPl.length ? rowsPl : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          ws["!cols"] = [{ wch: 6 }, { wch: 28 }, { wch: 16 }, { wch: 32 }, { wch: 30 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
+          XLSX.utils.book_append_sheet(wb, ws, "แผนพัฒนาหลักสูตร");
+          downloadWorkbook(wb, filename, rowsPl);
+          return;
+        } catch (e) { console.warn(e); }
+      }
+      exportRowsToCSV(rowsPl, filename);
+    }
+
+    function exportCisaToExcel() {
+      const rowsC = (dataCisa || []).map((item, idx) => ({
+        "ลำดับ": idx + 1,
+        "คณะ/วิทยาลัย": item.faculty_name || "",
+        "ระดับการศึกษา": item.degree_level || "",
+        "ชื่อหลักสูตร": item.program_name || "",
+        "สาขาวิชา": item.major_name || "",
+        "ปี": item.curriculum_year || "",
+        "สถานะ CISA": item.cisa_status || ""
+      }));
+      const filename = `ข้อมูล_CISA_มทร_พระนคร_ต่อเนื่อง.xlsx`;
+      if (typeof XLSX !== "undefined" && XLSX.utils) {
+        try {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.json_to_sheet(rowsC.length ? rowsC : [{ "ข้อมูล": "ไม่มีข้อมูล" }]);
+          ws["!cols"] = [{ wch: 6 }, { wch: 28 }, { wch: 16 }, { wch: 32 }, { wch: 30 }, { wch: 10 }, { wch: 22 }];
+          XLSX.utils.book_append_sheet(wb, ws, "ข้อมูล CISA");
+          downloadWorkbook(wb, filename, rowsC);
+          return;
+        } catch (e) { console.warn(e); }
+      }
+      exportRowsToCSV(rowsC, filename);
     }
   </script>
 </body>
