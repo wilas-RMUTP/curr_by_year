@@ -2173,7 +2173,7 @@
         "สภาวิชาการ": item.step3_acad_council || "",
         "สภา ม.": item.step4_univ_council || ""
       }));
-      const filename = `แผนการพัฒนาหลักสูตร_มทร_พระนคร_ต่อเนื่อง.xlsx`;
+      const filename = `แผนการพัฒนาหลักสูตร_มทร_พระนคร.xlsx`;
       if (typeof XLSX !== "undefined" && XLSX.utils) {
         try {
           const wb = XLSX.utils.book_new();
@@ -2197,7 +2197,7 @@
         "ปี": item.curriculum_year || "",
         "สถานะ CISA": item.cisa_status || ""
       }));
-      const filename = `ข้อมูล_CISA_มทร_พระนคร_ต่อเนื่อง.xlsx`;
+      const filename = `ข้อมูล_CISA_มทร_พระนคร.xlsx`;
       if (typeof XLSX !== "undefined" && XLSX.utils) {
         try {
           const wb = XLSX.utils.book_new();
