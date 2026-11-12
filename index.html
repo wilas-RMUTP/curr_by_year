@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +6,8 @@
   <title>ระบบบริหารจัดการหลักสูตร มทร.พระนคร (Multi-Year Platform)</title>
   
   <!-- Tailwind CSS CDN -->
+  <!-- SheetJS (xlsx) for Genuine Excel Export (.xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Prompt -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +38,6 @@
           <div>
             <h1 class="font-bold text-xs sm:text-sm md:text-base tracking-wide flex items-center gap-2 flex-wrap">
               <span>ฐานข้อมูลหลักสูตร มทร.พระนคร</span>
-              <span class="bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">Cloud PostgreSQL</span>
             </h1>
             <p class="text-[10px] sm:text-[11px] text-slate-300 hidden sm:block">ระบบติดตาม ตรวจสอบ และบริหารจัดการข้อมูลหลักสูตร มหาวิทยาลัยเทคโนโลยีราชมงคลพระนคร</p>
           </div>
@@ -68,6 +69,12 @@
 
         <!-- Live Admin Status / Login Toggle -->
         <div id="admin-mode-container" class="hidden md:flex items-center"></div>
+
+        <!-- Export to Excel Button (All Sheets) -->
+        <button type="button" onclick="exportAllToExcel()" title="ดาวน์โหลดฐานข้อมูลทุกหมวดเป็นไฟล์ Excel (.xlsx)" class="bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/40 text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs transition shadow-sm font-medium">
+          <span>📥</span>
+          <span class="hidden sm:inline text-[11px]">ดาวน์โหลด Excel</span>
+        </button>
 
         <!-- Refresh Data Button -->
         <button type="button" onclick="refreshCurrentData()" title="รีเฟรชข้อมูลจาก Supabase Cloud" class="bg-white/10 hover:bg-white/20 border border-white/15 text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1 text-xs transition">
@@ -272,6 +279,7 @@
 
         <div class="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
           <span class="text-xs text-slate-500" id="p2026-count-label">แสดง 0 รายการ</span>
+          <button type="button" onclick="exportHigherEdToExcel()" title="ดาวน์โหลดตารางหลักสูตรอุดมศึกษาเป็น Excel" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap"><span>📥</span> <span>Excel</span></button>
           <button type="button" id="btn-add-p2026" onclick="checkAuthAndRun(() => openModalP2026('create'))" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap">
             <span>+</span> เพิ่มหลักสูตร (<span class="current-year-label">2569</span>)
           </button>
@@ -320,6 +328,7 @@
 
         <div class="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
           <span class="text-xs text-slate-500" id="pV2026-count-label">แสดง 0 รายการ</span>
+          <button type="button" onclick="exportVocationalToExcel()" title="ดาวน์โหลดตารางหลักสูตร ปวช. เป็น Excel" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap"><span>📥</span> <span>Excel</span></button>
           <button type="button" id="btn-add-pV2026" onclick="checkAuthAndRun(() => openModalPV2026('create'))" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap">
             <span>+</span> เพิ่มหลักสูตร ปวช. (<span class="current-year-label">2569</span>)
           </button>
@@ -375,6 +384,7 @@
 
         <div class="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
           <span class="text-xs text-slate-500" id="plan-count-label">แสดง 0 รายการ</span>
+          <button type="button" onclick="exportPlansToExcel()" title="ดาวน์โหลดตารางแผนพัฒนาหลักสูตรเป็น Excel" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap"><span>📥</span> <span>Excel</span></button>
           <button type="button" id="btn-add-plan" onclick="checkAuthAndRun(() => openModalPlan('create'))" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap">
             <span>+</span> เพิ่มแผนพัฒนา (<span class="current-year-label">2569</span>)
           </button>
@@ -392,10 +402,10 @@
                 <th class="py-2.5 px-2.5 sm:px-3.5 min-w-[160px]">หลักสูตร</th>
                 <th class="py-2.5 px-2.5 sm:px-3.5 min-w-[170px]">สาขาวิชา</th>
                 <th class="py-2.5 px-2 text-center whitespace-nowrap w-[70px]">ปี</th>
-                <th class="py-2.5 px-2 text-center min-w-[125px]">1.วิพากษ์</th>
-                <th class="py-2.5 px-2 text-center min-w-[125px]">2.ขับเคลื่อน</th>
-                <th class="py-2.5 px-2 text-center min-w-[125px]">3.สภาวิชาการ</th>
-                <th class="py-2.5 px-2 text-center min-w-[125px]">4.สภามหาฯ</th>
+                <th class="py-2.5 px-2 text-center min-w-[125px]">วิพากษ์</th>
+                <th class="py-2.5 px-2 text-center min-w-[125px]">ขับเคลื่อน</th>
+                <th class="py-2.5 px-2 text-center min-w-[125px]">สภาวิชาการ</th>
+                <th class="py-2.5 px-2 text-center min-w-[125px]">สภา ม.</th>
                 <th class="py-2.5 px-2 text-center whitespace-nowrap col-manage w-[70px]">จัดการ</th>
               </tr>
             </thead>
@@ -439,6 +449,7 @@
 
         <div class="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
           <span class="text-xs text-slate-500" id="cisa-count-label">แสดง 0 รายการ</span>
+          <button type="button" onclick="exportCisaToExcel()" title="ดาวน์โหลดตาราง CISA เป็น Excel" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap"><span>📥</span> <span>Excel</span></button>
           <button type="button" id="btn-add-cisa" onclick="checkAuthAndRun(() => openModalCisa('create'))" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1 whitespace-nowrap">
             <span>+</span> เพิ่มข้อมูล CISA (<span class="current-year-label">2569</span>)
           </button>
