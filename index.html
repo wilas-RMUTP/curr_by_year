@@ -29,17 +29,19 @@
     <div class="w-full max-w-[1700px] mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3">
       
       <!-- Brand & Title -->
-      <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-start">
-        <div class="flex items-center space-x-2.5">
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-3">
           <!-- Logo RMUTP in Soft Pastel Purple -->
-          <div class="w-10 h-10 rounded-xl bg-purple-500/20 backdrop-blur border border-purple-300/30 text-[#d8b4fe] font-bold text-lg flex items-center justify-center shadow-inner flex-shrink-0">
+          <div class="px-2.5 py-1 h-10 rounded-xl bg-purple-500/20 backdrop-blur border border-purple-300/30 text-[#d8b4fe] font-bold text-sm sm:text-base flex items-center justify-center shadow-inner flex-shrink-0 tracking-wider">
             RMUTP
           </div>
-          <div>
-            <h1 class="font-bold text-xs sm:text-sm md:text-base tracking-wide flex items-center gap-2 flex-wrap">
-              <span>ฐานข้อมูลหลักสูตร มทร.พระนคร</span>
+          <div class="flex flex-col justify-center">
+            <h1 class="font-bold text-sm sm:text-base md:text-lg text-white tracking-wide leading-snug">
+              ระบบจัดการข้อมูลหลักสูตร
             </h1>
-            <p class="text-[10px] sm:text-[11px] text-slate-300 hidden sm:block">ระบบติดตาม ตรวจสอบ และบริหารจัดการข้อมูลหลักสูตร มหาวิทยาลัยเทคโนโลยีราชมงคลพระนคร</p>
+            <p class="text-xs text-slate-300 font-normal leading-normal">
+              มหาวิทยาลัยเทคโนโลยีราชมงคลพระนคร
+            </p>
           </div>
         </div>
 
@@ -298,6 +300,7 @@
                 <th class="py-2.5 px-2.5 sm:px-3.5 min-w-[170px]">หลักสูตร</th>
                 <th class="py-2.5 px-2.5 sm:px-3.5 min-w-[180px]">สาขาวิชา</th>
                 <th class="py-2.5 px-2 text-center whitespace-nowrap w-[140px]">ปี (ประเภท & พ.ศ.)</th>
+                <th class="py-2.5 px-2 text-center whitespace-nowrap w-[95px]">เล่มหลักสูตร</th>
                 <th class="py-2.5 px-2 text-center whitespace-nowrap w-[75px]">IQA</th>
                 <th class="py-2.5 px-2 text-center whitespace-nowrap w-[95px]">เกณฑ์</th>
                 <th class="py-2.5 px-2.5 sm:px-3 text-center min-w-[130px]">ISCED</th>
@@ -610,6 +613,16 @@
               <option value="มนุษยศาสตร์และสังคมศาสตร์">มนุษยศาสตร์และสังคมศาสตร์</option>
               <option value="วิทยาศาสตร์เทคโนโลยี">วิทยาศาสตร์เทคโนโลยี</option>
             </select>
+          </div>
+        </div>
+                <div>
+          <label class="block font-semibold mb-1 flex items-center justify-between">
+            <span>ลิงก์เล่มหลักสูตร PDF (Google Drive / OneDrive)</span>
+            <span class="text-[10px] text-slate-400 font-normal">แชร์สิทธิ์เป็น 'ทุกคนที่มีลิงก์ดูได้'</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">🔗</span>
+            <input type="url" id="p2026-pdf" placeholder="https://drive.google.com/file/d/... หรือ OneDrive Link" class="w-full border border-slate-200 rounded-lg p-2 pl-8 text-xs">
           </div>
         </div>
         <div><label class="block font-semibold mb-1">หมายเหตุ</label><input type="text" id="p2026-note" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)..." class="w-full border border-slate-200 rounded-lg p-2"></div>
@@ -1087,6 +1100,7 @@
             program_name: item.program_name,
             major_name: item.major_name,
             curriculum_year: item.curriculum_year,
+            pdf_url: item.pdf_url || null,
             iqa_standard: item.iqa_standard,
             curriculum_standard: item.curriculum_standard,
             isced_group: item.isced_group,
@@ -1450,6 +1464,13 @@
             <td class="py-2.5 px-2.5 sm:px-3.5 text-slate-800">${escapeHtml(item.program_name)}</td>
             <td class="py-2.5 px-2.5 sm:px-3.5 font-medium text-slate-900">${escapeHtml(item.major_name)}</td>
             <td class="py-2.5 px-2 text-center text-slate-600 whitespace-nowrap">${escapeHtml(item.curriculum_year || "-")}</td>
+            <td class="py-2.5 px-2 text-center whitespace-nowrap">
+              ${item.pdf_url ? `
+                <a href="${escapeHtml(item.pdf_url)}" target="_blank" rel="noopener noreferrer" title="เปิดดูเล่มหลักสูตร (PDF)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition shadow-xs">
+                  <span>📄</span> <span>ดูเล่ม PDF</span>
+                </a>
+              ` : `<span class="text-slate-300 text-xs">-</span>`}
+            </td>
             <td class="py-2.5 px-2 text-center whitespace-nowrap"><span class="px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-mono">${escapeHtml(item.iqa_standard || "-")}</span></td>
             <td class="py-2.5 px-2 text-center whitespace-nowrap text-[11px] text-slate-600">${escapeHtml(item.curriculum_standard || "-")}</td>
             <td class="py-2.5 px-2.5 sm:px-3 text-center text-[11px] text-slate-600">${escapeHtml(item.isced_group || "-")}</td>
@@ -1489,12 +1510,14 @@
           document.getElementById("p2026-std").value = it.curriculum_standard || "พ.ศ. 2565";
           document.getElementById("p2026-isced").value = it.isced_group || "ยังไม่ระบุ";
           document.getElementById("p2026-note").value = it.note || "";
+          document.getElementById("p2026-pdf").value = it.pdf_url || "";
         }
       } else {
         title.textContent = `เพิ่มหลักสูตรอุดมศึกษา (${currentYear})`;
         document.getElementById("form-p2026").reset();
         document.getElementById("p2026-year").value = `หลักสูตรปรับปรุง พ.ศ. ${currentYear}`;
         document.getElementById("p2026-isced").value = "ยังไม่ระบุ";
+        document.getElementById("p2026-pdf").value = "";
       }
 
       document.getElementById("modal-p2026").classList.remove("hidden");
@@ -1514,6 +1537,7 @@
         curriculum_year: document.getElementById("p2026-year").value.trim(),
         program_name: document.getElementById("p2026-name").value.trim(),
         major_name: document.getElementById("p2026-major").value.trim(),
+        pdf_url: document.getElementById("p2026-pdf").value.trim(),
         iqa_standard: document.getElementById("p2026-iqa").value.trim(),
         curriculum_standard: document.getElementById("p2026-std").value.trim(),
         isced_group: document.getElementById("p2026-isced").value.trim(),
@@ -2039,6 +2063,7 @@
         "ชื่อหลักสูตร": item.program_name || "",
         "สาขาวิชา": item.major_name || "",
         "ปี": item.curriculum_year || "",
+        "เล่มหลักสูตร (PDF)": item.pdf_url || "",
         "มาตรฐาน IQA": item.iqa_standard || "",
         "เกณฑ์มาตรฐานหลักสูตร": item.curriculum_standard || "",
         "กลุ่ม ISCED": item.isced_group || ""
@@ -2117,6 +2142,7 @@
         "ชื่อหลักสูตร": item.program_name || "",
         "สาขาวิชา": item.major_name || "",
         "ปี": item.curriculum_year || "",
+        "เล่มหลักสูตร (PDF)": item.pdf_url || "",
         "มาตรฐาน IQA": item.iqa_standard || "",
         "เกณฑ์มาตรฐานหลักสูตร": item.curriculum_standard || "",
         "กลุ่ม ISCED": item.isced_group || ""
